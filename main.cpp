@@ -1,11 +1,13 @@
 #include "mbed.h"
 
-DigitalOut led1(LED1);
-
+//DigitalOut led1(LED1);
+Serial pc(USBTX, USBRX);
 // main() runs in its own thread in the OS
-int main() {
-    while (true) {
-        led1 = !led1;
-        wait(0.5);
-    }
+int main()
+{
+	for(;;)
+	{
+		pc.printf("Hello World!\r\n");
+		wait(0.3);
+	}
 }
