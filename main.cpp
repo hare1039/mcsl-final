@@ -1,13 +1,29 @@
 #include "mbed.h"
+#include "PinNames.h"
+#include "TextLCD.h"
+#include <string>
 
-//DigitalOut led1(LED1);
+TextLCD lcd(D2, D3, D4, D5, D6, D7); // rs, e, d4-d7
 Serial pc(USBTX, USBRX);
-// main() runs in its own thread in the OS
+
 int main()
 {
 	for(;;)
 	{
-		pc.printf("Hello World!\r\n");
-		wait(0.3);
+		std::string s;
+		for(;;)
+		{
+			char c = pc.getc();
+			if (c == 13)
+			{
+				pc.printf("\n\r");
+				break;
+			}
+			pc.printf("%c", c);
+			s += c;
+		}
+		lcd.cls();
+		lcd.printf("%s", s.c_str());
+		pc.printf("%s showed\n\r", s.c_str());
 	}
 }
