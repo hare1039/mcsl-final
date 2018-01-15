@@ -1,29 +1,37 @@
 #include "mbed.h"
+#include "Serial.h"
 #include "PinNames.h"
-#include "TextLCD.h"
-#include <string>
+#include "wav.h"
+#include <deque>
 
-TextLCD lcd(D2, D3, D4, D5, D6, D7); // rs, e, d4-d7
+#define sample_freq 16000.0
+
+Serial bt(D10, D2);
 Serial pc(USBTX, USBRX);
+AnalogOut speaker(A2);
+Ticker sampletick;
+
+// std::deque<unsigned short> data;
+void audio_sample()
+{
+	static int i(0);
+	speaker.write_u16(data[i]);
+	i++;
+}
 
 int main()
 {
+//	for(int i(0); i < 100; i++)
+//	{
+//		char c = pc.getc();
+//		bt.printf("%c\n\r", c);
+//		audio.period(2.0f);
+//		audio.write(0.50f);
+//	}
 	for(;;)
 	{
-		std::string s;
-		for(;;)
-		{
-			char c = pc.getc();
-			if (c == 13)
-			{
-				pc.printf("\n\r");
-				break;
-			}
-			pc.printf("%c", c);
-			s += c;
-		}
-		lcd.cls();
-		lcd.printf("%s", s.c_str());
-		pc.printf("%s showed\n\r", s.c_str());
-	}
+//		bt.printf("waiting...\n\r");
+		wait(1.0);
+        sampletick.attach(&audio_sample, 1.0 / sample_freq);
+    }
 }
