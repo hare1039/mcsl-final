@@ -1,7 +1,6 @@
 #include "mbed.h"
 #include "Serial.h"
 #include "PinNames.h"
-#include "wav.h"
 #include <deque>
 
 #define sample_freq 16000.0
@@ -11,27 +10,28 @@ Serial pc(USBTX, USBRX);
 AnalogOut speaker(A2);
 Ticker sampletick;
 
-// std::deque<unsigned short> data;
+std::deque<unsigned short> data;
 void audio_sample()
 {
-	static int i(0);
-	speaker.write_u16(data[i]);
-	i++;
+	if (not data.empty())
+	{
+		speaker.write_u16(data.front());
+		data.pop_front();
+	}
 }
+
+unsigned short buffer[128];
 
 int main()
 {
-//	for(int i(0); i < 100; i++)
-//	{
-//		char c = pc.getc();
-//		bt.printf("%c\n\r", c);
-//		audio.period(2.0f);
-//		audio.write(0.50f);
-//	}
-	for(;;)
+//	sampletick.attach(&audio_sample, 1.0 / sample_freq);
+	for(int i(0);;i++)
 	{
-//		bt.printf("waiting...\n\r");
-		wait(1.0);
-        sampletick.attach(&audio_sample, 1.0 / sample_freq);
-    }
+		bt.read (buffer, 128, [](){
+			for (int i(0); i<128; i++)			
+				data.push_back(data[i]);			
+	   	});
+        if (i % 10000 == 0)
+	        pc.printf(">> %d \r\n", data.back());
+	}
 }
