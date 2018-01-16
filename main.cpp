@@ -3,59 +3,34 @@
 #include "PinNames.h"
 #include <queue>
 
-#define sample_freq 16000.0
+constexpr float sample_freq = 16000.0;
 
-Serial bt(D10, D2, 230400);
+Serial bt(D10, D2);
 Serial pc(USBTX, USBRX, 230400);
 AnalogOut speaker(A2);
 Ticker tick, tick2;
 
+constexpr int buffer_size = 19000; 
 std::queue<int> data;
+bool play_started = false;
 void audio_sample()
 {
-	if (not data.empty())
+	if (data.size() > buffer_size || play_started)
 	{
 		speaker.write_u16(data.front());
 		data.pop();
+	    play_started = data.empty()? false: true;
 	}
 }
-
-constexpr int buffer_size = 8*1024;
-unsigned char buffer0[buffer_size];
-bool buffer0_ok = false;
-unsigned char buffer1[buffer_size];
-bool buffer1_ok = false;
-
 
 int main()
 {
 	tick.attach(&audio_sample, 1.0 / sample_freq);
-	tick2.attach([](){pc.printf("data size: %d\r\n", data.size());}, 1.0 );
-	bt.read (buffer0, buffer_size, [](int x){ buffer0_ok = true; });
+	tick2.attach([](){pc.printf("data size: %d && start: %d\r\n", data.size(), play_started);}, 1.0 );
+//	bt.read (buffer0, buffer_size, [](int x){ buffer0_ok = true; });
 	for(;;)
 	{
-		if (buffer0_ok)
-		{
-			pc.printf("buffer0_ok\r\n");
-			buffer0_ok = false;
-			for (int i(0); i < buffer_size; i += 2)
-			{
-				int p = ((static_cast<int>(buffer0[i]) << 8) | buffer0[i+1]);
-				data.push(p);
-			}
-			bt.read (buffer0, buffer_size, [](int x){ buffer0_ok = true; });
-		}
-		if (buffer1_ok)
-		{
-			pc.printf("buffer1_ok\r\n");
-			buffer1_ok = false;
-			for (int i(0); i < buffer_size; i += 2)
-			{
-				int p = ((static_cast<int>(buffer1[i]) << 8) | buffer1[i+1]);
-//x				pc.printf("%d ", p);
-				data.push(p);
-			}
-			bt.read (buffer0, buffer_size, [](int x){ buffer0_ok = true; });
-		}
+		int i = bt.getc() << 8 | bt.getc();
+		data.push(i);
 	}
 }
