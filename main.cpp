@@ -1,37 +1,44 @@
 #include "mbed.h"
 #include "Serial.h"
 #include "PinNames.h"
-#include <deque>
+#include <queue>
 
 #define sample_freq 16000.0
 
-Serial bt(D10, D2);
-Serial pc(USBTX, USBRX);
+Serial bt(D10, D2, 9600);
+Serial pc(USBTX, USBRX, 115200);
 AnalogOut speaker(A2);
-Ticker sampletick;
+Ticker tick;
 
-std::deque<unsigned short> data;
+std::queue<int> data;
 void audio_sample()
 {
 	if (not data.empty())
 	{
+//		pc.printf("%d ", data.front());
 		speaker.write_u16(data.front());
-		data.pop_front();
+		data.pop();
 	}
 }
 
-unsigned short buffer[128];
+unsigned char buffer[16*1024];
 
 int main()
 {
-//	sampletick.attach(&audio_sample, 1.0 / sample_freq);
-	for(int i(0);;i++)
+	tick.attach(&audio_sample, 1.0 / sample_freq);
+	for(;;)
 	{
-		bt.read (buffer, 128, [](){
-			for (int i(0); i<128; i++)			
-				data.push_back(data[i]);			
-	   	});
-        if (i % 10000 == 0)
-	        pc.printf(">> %d \r\n", data.back());
+//		bt.printf("hi");
+		pc.read (buffer, 16*1024, [](int x)
+		    {
+			    bt.printf("reads\r\n");
+			    for (int i(0); i < 16*1024; i += 2)
+			    {
+				    int p = ((static_cast<int>(buffer[i]) << 8) | buffer[i+1]);
+				    bt.printf("%d ", p);
+			        data.push(p);
+			    }
+//			    pc.printf("data size %d\r\n", data.size());
+		    });
 	}
 }
