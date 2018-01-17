@@ -2,6 +2,8 @@
 #include "Serial.h"
 #include "PinNames.h"
 #include <queue>
+#include <string>
+
 
 constexpr float sample_freq = 16000.0;
 
@@ -21,14 +23,34 @@ void audio_sample()
 		data.pop();
 	    play_started = data.empty()? false: true;
 	}
-}
+} 
 
 int main()
 {
+	std::string command;
+	for (;;)
+	{
+		char c = pc.getc();
+		if (c == '\r')
+		{
+			bt.printf("%s", command.c_str());
+			while (bt.readable())
+			{
+				pc.putc(bt.getc());
+			}
+		}
+		else
+		{
+			command += c;
+		}
+		pc.putc(c);
+	}
+		
+	
 	tick.attach(&audio_sample, 1.0 / sample_freq);
 	tick2.attach([](){pc.printf("data size: %d && start: %d\r\n", data.size(), play_started);}, 1.0 );
-//	bt.read (buffer0, buffer_size, [](int x){ buffer0_ok = true; });
-	for(;;)
+
+	for (;;)
 	{
 		int i = bt.getc() << 8 | bt.getc();
 		data.push(i);
