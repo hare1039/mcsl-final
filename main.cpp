@@ -7,8 +7,8 @@
 
 constexpr float sample_freq = 16000.0;
 
-Serial bt(D10, D2);
-Serial pc(USBTX, USBRX, 230400);
+Serial bt(D10, D2, 230400);
+Serial pc(USBTX, USBRX);
 AnalogOut speaker(A2);
 Ticker tick, tick2;
 
@@ -27,28 +27,8 @@ void audio_sample()
 
 int main()
 {
-	std::string command;
-	for (;;)
-	{
-		char c = pc.getc();
-		if (c == '\r')
-		{
-			bt.printf("%s", command.c_str());
-			while (bt.readable())
-			{
-				pc.putc(bt.getc());
-			}
-		}
-		else
-		{
-			command += c;
-		}
-		pc.putc(c);
-	}
-		
-	
 	tick.attach(&audio_sample, 1.0 / sample_freq);
-	tick2.attach([](){pc.printf("data size: %d && start: %d\r\n", data.size(), play_started);}, 1.0 );
+	tick2.attach([](){pc.printf("data size: %d && start: %d\r\n", data.size(), play_started);}, 3.0 );
 
 	for (;;)
 	{
